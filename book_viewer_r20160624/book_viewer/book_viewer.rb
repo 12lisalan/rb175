@@ -3,7 +3,7 @@ require "sinatra/reloader"
 require "tilt/erubis"
 
 get "/" do
-  @title = "Some title"
+  @title = "The Adventures of Sherlock Holmes"
   @content = File.readlines("data/toc.txt")
   erb :home
 end
@@ -11,6 +11,6 @@ end
 get "/chapters/1" do
   @title = "Chapter 1"
   @content = File.readlines("data/toc.txt")
-  @chapter_1 = File.readlines("data/chp1.txt")
+  @chapter_1 = File.read("data/chp1.txt")
   erb :chapter
 end
