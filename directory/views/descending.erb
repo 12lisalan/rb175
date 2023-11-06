@@ -5,11 +5,11 @@
     <title>title</title>
   </head>
   <body>
-    <a href= "/descending"> Sort descending </a>
-    <% @entries.sort.each do |entry| %>
+    <a href= "#"> Sort ascending </a>
+    <% @entries.sort.reverse.each do |entry| %>
     <ul>
       <li>
-        <a href= "/<%= entry %>"><%= entry %></a>
+        <a href="<%= entry %>"><%= entry %></a>
       </li>
     </ul>
     <% end %>
