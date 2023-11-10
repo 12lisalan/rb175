@@ -33,8 +33,8 @@ end
 
 
 get "/search" do
-  query = params[:query]
-  @result = search
+  @query = params[:query]
+  @result = search_chapter
 
   erb :search
 end
@@ -43,17 +43,32 @@ not_found do
   redirect "/"
 end
 
-# returns hash in format {number:title} of chapters containing
-# search term
-def search
-  query = params[:query]
-  result = {}
+def each_chapter
   @contents.each_with_index do |title, number|
     number = number + 1
     chapter = File.read("data/chp#{number}.txt")
-    if chapter.include?(query)
-      result[number] = title
+    yield title, number, chapter
+  end
+end
+
+
+
+# returns hash in format {number:title} of chapters containing
+# search term
+def search_chapter
+  result = Hash.new []
+
+  each_chapter do |title, number, chapter|
+    paragraphs = chapter.split("\n\n")
+    paragraphs.each_with_index do |paragraph, index|
+      index = index + 1
+      if paragraph.include?(@query)
+        paragraph = paragraph.gsub(@query, "<b>#{@query}</b>")
+        result[[title, number]] += [[paragraph, index]]
+      end
     end
   end
+
   result
 end
+
