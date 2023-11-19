@@ -1,11 +1,14 @@
 require "sinatra"
 require "sinatra/reloader"
+require "sinatra/content_for"
 require "tilt/erubis"
 
 configure do
   enable :sessions
   set :session_secret, 'secret'
 end
+
+set :session_secret, SecureRandom.hex(32)
 
 before do
   session[:lists] ||= []
@@ -19,7 +22,7 @@ end
 # GET /lists/new  -> new list form
 # POST /lists     -> create new list
 # GET /lists/1    -> view a single list
-#
+# POST
 
 # view all lists
 get "/lists" do
@@ -56,4 +59,35 @@ post "/lists" do
     redirect "/lists"
   end
 end
-set :session_secret, SecureRandom.hex(32)
+
+# view details about a single list
+get "/lists/:id" do
+  @id = params[:id].to_i
+  @list = session[:lists][@id]
+  erb :list
+end
+
+# render new edit name form
+get "/lists/:id/edit" do
+  @id = params[:id].to_i
+  @list = session[:lists][@id]
+  @name = @list[:name]
+  erb :edit
+end
+
+# edit list name
+post "/lists/:id" do
+  list_name = params[:list_name].strip
+  @id = params[:id].to_i
+  list = session[:lists][@id]
+
+  error = error_for_list_name(list_name)
+  if error
+    session[:error] = error
+    erb :edit
+  else
+    list[:name] = list_name
+    session[:success] = "The list name has been updated."
+    redirect "/lists/#{@id}"
+  end
+end
