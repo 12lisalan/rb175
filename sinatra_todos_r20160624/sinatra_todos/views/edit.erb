@@ -1,3 +1,12 @@
+<section id="todos">
+  <header>
+    <h2>Editing "<%= @list[:name] %>"</h2>
+    <ul>
+      <li><a class="delete" href="/lists/<%= @id %>/edit">Delete List</a></li>
+    </ul>
+  </header>
+</session>
+
 <form action="/lists/<%= @id %>" method="post">
   <dl>
     <dt>
@@ -8,7 +17,7 @@
     </dd>
   </dl>
   <fieldset class="actions">
-    <input type="submit" value="Save">
+    <input type="submit" value="Update">
     <a href="/lists/<%= @id %>">Cancel</a>
   </fieldset>
 </form>
