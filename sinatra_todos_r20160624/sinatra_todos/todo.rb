@@ -79,15 +79,53 @@ end
 post "/lists/:id" do
   list_name = params[:list_name].strip
   @id = params[:id].to_i
-  list = session[:lists][@id]
+  @list = session[:lists][@id]
 
   error = error_for_list_name(list_name)
   if error
     session[:error] = error
     erb :edit
   else
-    list[:name] = list_name
+    @list[:name] = list_name
     session[:success] = "The list name has been updated."
     redirect "/lists/#{@id}"
   end
+end
+
+post "/lists/:id/delete" do
+  list = session[:lists].delete_at(params[:id].to_i)
+  session[:success] = %(The list "#{list[:name]}" has been deleted.)
+  redirect "/lists"
+end
+
+# return error message if name invalid.
+# return nil if name is valid.
+def error_for_todo_name(name)
+  if !(1..100).cover? name.size
+    "List name must be between 1 and 100 characters."
+  end
+end
+
+# add a new todo to the current list
+post '/lists/:id/todos' do
+  todo_name = params[:todo].strip
+  id = params[id].to_i
+  @list = session[:lists][id]
+
+  error = error_for_todo_name(todo_name)
+  if error
+    session[:error] = error
+    erb :list
+  else
+    @list[:todos] << {name: todo_name, completed: false}
+    redirect "/lists/#{id}"
+  end
+end
+
+post "/lists/:id/delete/:todo_id" do
+  id = params[id].to_i
+  list = session[:lists][id]
+  deleted_todo = list[:todos].delete_at(params[:todo_id].to_i)
+  session[:success] = %(The todo "#{deleted_todo[:name]}" has been deleted.)
+  redirect "/lists/#{id}"
 end

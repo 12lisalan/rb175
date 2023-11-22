@@ -5,9 +5,34 @@
       <li><a class="edit" href="/lists/<%= @id %>/edit">Edit List</a></li>
     </ul>
   </header>
+
+  <ul>
+    <% @list[:todos].each_with_index do |todo, index| %>
+      <li>
+        <h3><%= todo[:name] %></h3>
+        <form action="/lists/<%= params[:id] %>/delete/<%= index %>" method="post" class="delete">
+          <button type="submit">Delete</button>
+        </form>
+      </li>
+    <% end %>
+  </ul>
 </session>
 
+<form action="/lists/<%= params[:id] %>/todos" method="post">
+  <dl>
+    <dt>
+      <label for="todo">Enter a new todo item:</label>
+    </dt>
+    <dd>
+      <input name="todo" id="todo" placeholder="Something to do" type="text" value="<%= params[:todo] %>">
+    </dd>
+  </dl>
+  <fieldset class="actions">
+    <input type="submit" value="Add">
+  </fieldset>
+</form>
+
 <% content_for :header_links do %>
-  <a href="/lists">All Lists</a>
+  <a  class="list" href="/lists">All Lists</a>
 <% end %>
 
