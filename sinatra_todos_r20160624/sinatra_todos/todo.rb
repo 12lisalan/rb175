@@ -10,6 +10,26 @@ end
 
 set :session_secret, SecureRandom.hex(32)
 
+
+helpers do
+    # returns true if all items in passed in list is complete
+  def list_complete?(list)
+    total_count(list) > 0 && remaining_count(list) == 0
+  end
+
+  def list_class(list)
+    "complete" if list_complete?(list)
+  end
+
+  def remaining_count(list)
+    list[:todos].count{ |todo| !todo[:completed] }
+  end
+
+  def total_count(list)
+    list[:todos].size
+  end
+end
+
 before do
   session[:lists] ||= []
 end
@@ -109,7 +129,7 @@ end
 # add a new todo to the current list
 post '/lists/:id/todos' do
   todo_name = params[:todo].strip
-  id = params[id].to_i
+  id = params[:id].to_i
   @list = session[:lists][id]
 
   error = error_for_todo_name(todo_name)
@@ -122,10 +142,35 @@ post '/lists/:id/todos' do
   end
 end
 
-post "/lists/:id/delete/:todo_id" do
-  id = params[id].to_i
+# deletes todo at index
+post "/lists/:id/todos/:todo_id/delete" do
+  id = params[:id].to_i
   list = session[:lists][id]
   deleted_todo = list[:todos].delete_at(params[:todo_id].to_i)
   session[:success] = %(The todo "#{deleted_todo[:name]}" has been deleted.)
+  redirect "/lists/#{id}"
+end
+
+# checks/unchecks specific todo item
+# updates status of a todo
+post "/lists/:id/todos/:todo_id" do
+  id = params[:id].to_i
+  list = session[:lists][id]
+  todo_id = params[:todo_id].to_i
+  is_completed = params[:completed] == "true"
+  todo = list[:todos][todo_id]
+  todo[:completed] = is_completed
+  session[:success] = %(The todo "#{todo[:name]}" is updated.)
+  redirect "/lists/#{id}"
+end
+
+# marks all todos in one list to complete
+post "/lists/:id/complete" do
+  id = params[:id].to_i
+  list = session[:lists][id]
+  list[:todos].each do |todo|
+    todo[:completed] = true
+  end
+  session[:success] = %(The todo list is updated.)
   redirect "/lists/#{id}"
 end

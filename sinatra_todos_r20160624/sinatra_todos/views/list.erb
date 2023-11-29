@@ -1,22 +1,37 @@
-<section id="todos">
+<section id="todos" class="<%= list_class(@list) %>">
   <header>
     <h2><%= @list[:name] %></h2>
     <ul>
+      <li>
+        <form action="/lists/<%= params[:id] %>/complete" method="post">
+          <button class="check" type="submit">Complete All</button>
+        </form>
+      </li>
       <li><a class="edit" href="/lists/<%= @id %>/edit">Edit List</a></li>
     </ul>
   </header>
 
   <ul>
     <% @list[:todos].each_with_index do |todo, index| %>
-      <li>
+      <% if todo[:completed] %>
+        <li class="complete">
+      <% else %>
+        <li>
+      <% end %>
+
+        <form action="/lists/<%= params[:id] %>/todos/<%= index %>" method="post" class="check">
+         <input type="hidden" name="completed" value="<%= !todo[:completed] %>"/>
+         <button type="submit">Complete</button>
+        </form>
+
         <h3><%= todo[:name] %></h3>
-        <form action="/lists/<%= params[:id] %>/delete/<%= index %>" method="post" class="delete">
+        <form action="/lists/<%= params[:id] %>/todos/<%= index %>/delete" method="post" class="delete">
           <button type="submit">Delete</button>
         </form>
       </li>
     <% end %>
   </ul>
-</session>
+</section>
 
 <form action="/lists/<%= params[:id] %>/todos" method="post">
   <dl>
