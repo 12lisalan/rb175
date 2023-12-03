@@ -6,6 +6,7 @@ require "tilt/erubis"
 configure do
   enable :sessions
   set :session_secret, 'secret'
+  set :erb, :escape_html => true
 end
 
 set :session_secret, SecureRandom.hex(32)
@@ -27,6 +28,29 @@ helpers do
 
   def total_count(list)
     list[:todos].size
+  end
+
+  def sorted_lists(lists, &block)
+    completed_list, incomplete_list = lists.partition{ |list| list_complete?(list) }
+
+    incomplete_list.each{ |list| yield list, lists.index(list) }
+    completed_list.each{ |list| yield list, lists.index(list) }
+  end
+
+  def sorted_todos(todos, &block)
+    complete_todos, incomplete_todos = todos.partition{ |todo| todo[:completed] }
+
+    incomplete_todos = {}
+    completed_todos = {}
+    todos.each_with_index do |todo, index|
+      if todo[:completed]
+        completed_todos[index] = todo
+      else
+        incomplete_todos[index] = todo
+      end
+    end
+    incomplete_todos.each{|index, todo| yield todo, index}
+    completed_todos.each{|index, todo| yield todo, index}
   end
 end
 
@@ -67,30 +91,38 @@ end
 
 # create new list
 post "/lists" do
-  list_name = params[:list_name].strip
+  @list_name = params[:list_name].strip
 
-  error = error_for_list_name(list_name)
+  error = error_for_list_name(@list_name)
   if error
     session[:error] = error
     erb :new_list
   else
-    session[:lists] << {name: list_name, todos: []}
+    session[:lists] << {name: @list_name, todos: []}
     session[:success] = "The list has been created"
     redirect "/lists"
   end
 end
 
+def load_list(index)
+  list = session[:lists][index] if index && session[:lists][index]
+  return list if list
+
+  session[:error] = "The specified list was not found."
+  redirect :lists
+end
+
 # view details about a single list
 get "/lists/:id" do
   @id = params[:id].to_i
-  @list = session[:lists][@id]
+  @list = load_list(@id)
   erb :list
 end
 
 # render new edit name form
 get "/lists/:id/edit" do
   @id = params[:id].to_i
-  @list = session[:lists][@id]
+  @list = load_list(@id)
   @name = @list[:name]
   erb :edit
 end
@@ -99,7 +131,7 @@ end
 post "/lists/:id" do
   list_name = params[:list_name].strip
   @id = params[:id].to_i
-  @list = session[:lists][@id]
+  @list = load_list(@id)
 
   error = error_for_list_name(list_name)
   if error
@@ -130,7 +162,7 @@ end
 post '/lists/:id/todos' do
   todo_name = params[:todo].strip
   id = params[:id].to_i
-  @list = session[:lists][id]
+  @list = load_list(id)
 
   error = error_for_todo_name(todo_name)
   if error
@@ -145,7 +177,7 @@ end
 # deletes todo at index
 post "/lists/:id/todos/:todo_id/delete" do
   id = params[:id].to_i
-  list = session[:lists][id]
+  @list = load_list(id)
   deleted_todo = list[:todos].delete_at(params[:todo_id].to_i)
   session[:success] = %(The todo "#{deleted_todo[:name]}" has been deleted.)
   redirect "/lists/#{id}"
@@ -155,7 +187,7 @@ end
 # updates status of a todo
 post "/lists/:id/todos/:todo_id" do
   id = params[:id].to_i
-  list = session[:lists][id]
+  list = load_list(id)
   todo_id = params[:todo_id].to_i
   is_completed = params[:completed] == "true"
   todo = list[:todos][todo_id]
