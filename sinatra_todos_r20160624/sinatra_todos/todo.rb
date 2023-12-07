@@ -68,6 +68,10 @@ end
 # GET /lists/1    -> view a single list
 # POST
 
+# lists = session[:lists]
+# lists << {name: @list_name, todos: []} (one list)
+# @list[:todos] << {id: id, name: todo_name, completed: false} (one todo)
+
 # view all lists
 get "/lists" do
   @lists = session[:lists]
@@ -105,7 +109,7 @@ post "/lists" do
 end
 
 def load_list(index)
-  list = session[:lists][index] if index && session[:lists][index]
+  list = session[:lists][index] if (index && session[:lists][index])
   return list if list
 
   session[:error] = "The specified list was not found."
@@ -144,10 +148,16 @@ post "/lists/:id" do
   end
 end
 
+# Delete a todo list
 post "/lists/:id/delete" do
-  list = session[:lists].delete_at(params[:id].to_i)
-  session[:success] = %(The list "#{list[:name]}" has been deleted.)
-  redirect "/lists"
+  id = params[:id].to_i
+  session[:lists].delete_at(id)
+  if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
+    "/lists"
+  else
+    session[:success] = "The list has been deleted."
+    redirect "/lists"
+  end
 end
 
 # return error message if name invalid.
@@ -156,6 +166,11 @@ def error_for_todo_name(name)
   if !(1..100).cover? name.size
     "List name must be between 1 and 100 characters."
   end
+end
+
+def next_todo_id(todos)
+  max = todos.map{ |todo| todo[:id] }.max || 0
+  max + 1
 end
 
 # add a new todo to the current list
@@ -169,18 +184,43 @@ post '/lists/:id/todos' do
     session[:error] = error
     erb :list
   else
-    @list[:todos] << {name: todo_name, completed: false}
+
+    todo_id = next_todo_id(@list[:todos])
+    @list[:todos] << {id: todo_id, name: todo_name, completed: false}
     redirect "/lists/#{id}"
   end
 end
 
-# deletes todo at index
+# takes array of todos (list[:todo]) and index of todo `id`
+# deletes todo with index `id` from `todos` array
+def delete_todo(todos, id)
+  todos.delete load_todo(todos, id)
+end
+
+# Delete a todo from a list
 post "/lists/:id/todos/:todo_id/delete" do
-  id = params[:id].to_i
-  @list = load_list(id)
-  deleted_todo = list[:todos].delete_at(params[:todo_id].to_i)
-  session[:success] = %(The todo "#{deleted_todo[:name]}" has been deleted.)
-  redirect "/lists/#{id}"
+  @id = params[:id].to_i
+  @list = load_list(@id)
+
+  todo_id = params[:todo_id].to_i
+  #@list[:todos].delete_at todo_id
+  delete_todo(list[:todos], todo_id)
+  if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
+    status 204
+  else
+    session[:success] = "The todo has been deleted."
+    redirect "/lists/#{@id}"
+  end
+end
+
+# takes array of todos (list[:todo])
+# returns todo (Hash) based on todo id (integer)
+def load_todo(todos, id)
+  todos.each do |todo|
+    if todo[:id] == id
+      return todo
+    end
+  end
 end
 
 # checks/unchecks specific todo item
@@ -190,7 +230,7 @@ post "/lists/:id/todos/:todo_id" do
   list = load_list(id)
   todo_id = params[:todo_id].to_i
   is_completed = params[:completed] == "true"
-  todo = list[:todos][todo_id]
+  todo = load_todo(list[:todos], todo_id)
   todo[:completed] = is_completed
   session[:success] = %(The todo "#{todo[:name]}" is updated.)
   redirect "/lists/#{id}"
@@ -199,7 +239,7 @@ end
 # marks all todos in one list to complete
 post "/lists/:id/complete" do
   id = params[:id].to_i
-  list = session[:lists][id]
+  list = load_list(id)
   list[:todos].each do |todo|
     todo[:completed] = true
   end
