@@ -37,20 +37,12 @@ helpers do
     completed_list.each{ |list| yield list, lists.index(list) }
   end
 
+  # sorts todos based on completion
   def sorted_todos(todos, &block)
     complete_todos, incomplete_todos = todos.partition{ |todo| todo[:completed] }
 
-    incomplete_todos = {}
-    completed_todos = {}
-    todos.each_with_index do |todo, index|
-      if todo[:completed]
-        completed_todos[index] = todo
-      else
-        incomplete_todos[index] = todo
-      end
-    end
-    incomplete_todos.each{|index, todo| yield todo, index}
-    completed_todos.each{|index, todo| yield todo, index}
+    incomplete_todos.each(&block)
+    completed_todos.each(&block)
   end
 end
 
@@ -68,9 +60,11 @@ end
 # GET /lists/1    -> view a single list
 # POST
 
-# lists = session[:lists]
+# lists = session[:lists] (array of list hashes)
 # lists << {name: @list_name, todos: []} (one list)
-# @list[:todos] << {id: id, name: todo_name, completed: false} (one todo)
+# @list[:todos] << {id: id, name: todo_name, completed: false}
+#   (one todo)
+#   array of hashes
 
 # view all lists
 get "/lists" do
@@ -204,7 +198,8 @@ post "/lists/:id/todos/:todo_id/delete" do
 
   todo_id = params[:todo_id].to_i
   #@list[:todos].delete_at todo_id
-  delete_todo(list[:todos], todo_id)
+  #delete_todo(@list[:todos], todo_id)
+  @list[:todos].reject! { |todo| todo[:id] == todo_id }
   if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
     status 204
   else
