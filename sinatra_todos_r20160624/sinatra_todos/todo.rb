@@ -33,8 +33,8 @@ helpers do
   def sorted_lists(lists, &block)
     completed_list, incomplete_list = lists.partition{ |list| list_complete?(list) }
 
-    incomplete_list.each{ |list| yield list, lists.index(list) }
-    completed_list.each{ |list| yield list, lists.index(list) }
+    incomplete_list.each(&block)
+    completed_list.each(&block)
   end
 
   # sorts todos based on completion
@@ -42,7 +42,7 @@ helpers do
     complete_todos, incomplete_todos = todos.partition{ |todo| todo[:completed] }
 
     incomplete_todos.each(&block)
-    completed_todos.each(&block)
+    complete_todos.each(&block)
   end
 end
 
@@ -61,6 +61,9 @@ end
 # POST
 
 # lists = session[:lists] (array of list hashes)
+#   session[:lists]
+#   [{id: id, name: @list_name, todos: []}, {}...]
+
 # lists << {name: @list_name, todos: []} (one list)
 # @list[:todos] << {id: id, name: todo_name, completed: false}
 #   (one todo)
@@ -87,6 +90,10 @@ def error_for_list_name(name)
   end
 end
 
+def next_list_id(lists)
+  next_todo_id(lists)
+end
+
 # create new list
 post "/lists" do
   @list_name = params[:list_name].strip
@@ -96,14 +103,17 @@ post "/lists" do
     session[:error] = error
     erb :new_list
   else
-    session[:lists] << {name: @list_name, todos: []}
+    id = next_list_id(session[:lists])
+    session[:lists] << {id: id, name: @list_name, todos: []}
     session[:success] = "The list has been created"
     redirect "/lists"
   end
 end
 
 def load_list(index)
-  list = session[:lists][index] if (index && session[:lists][index])
+  # list = session[:lists][index] if (index && session[:lists][index])
+  list = session[:lists].find{ |list| list[:id] == index }
+
   return list if list
 
   session[:error] = "The specified list was not found."
@@ -145,7 +155,7 @@ end
 # Delete a todo list
 post "/lists/:id/delete" do
   id = params[:id].to_i
-  session[:lists].delete_at(id)
+  session[:lists].reject! { |list| list[:id] == id }
   if env["HTTP_X_REQUESTED_WITH"] == "XMLHttpRequest"
     "/lists"
   else
