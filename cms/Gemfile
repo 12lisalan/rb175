@@ -6,4 +6,7 @@ gem "erubis"
 gem "webrick"
 gem "rubocop"
 
+gem "minitest"
+gem "rack-test"
+
 ruby "3.2.2"
