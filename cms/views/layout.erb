@@ -6,8 +6,11 @@
 	<body>
 	  <header>
 	  </header>
+	  <% if session[:error] %>
+      <p><%= session.delete(:error) %></p>
+    <% end %>
 	  <main>
-		  <%= yield %>
+	  	<%== yield %>
 		</main>
 	</body>
 </html>

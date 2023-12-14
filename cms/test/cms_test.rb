@@ -29,4 +29,15 @@ class CMSTest < Minitest::Test
     text_body = File.read("data/history.txt")
     assert_includes last_response.body, text_body
   end
+
+  def test_no_file
+    get "/some_file"
+    assert_equal 302, last_response.status
+
+    get "/"
+    assert_includes last_response.body, "some_file does not exist."
+
+    get "/"
+    refute_includes last_response.body, "some_file does not exist."
+  end
 end
