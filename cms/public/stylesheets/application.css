@@ -1,0 +1,30 @@
+body {
+  padding: 1em;
+  font-family: sans-serif;
+}
+
+textarea{
+  width: 500px;
+  height: 250px
+}
+
+p {
+  padding: 10px;
+}
+
+.success {
+  background: #CBF2E5;
+}
+
+.error {
+  background: #FFCFBF;
+}
+
+form.inline {
+  display: inline;
+}
+
+.user-status {
+  font-style: italic;
+  font-size: 0.9em;
+}

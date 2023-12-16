@@ -1,0 +1,8 @@
+<form action="/<%= params[:file] %>" method="post">
+  <label>Edit content of <%= params[:file] %>:</label>
+  <br>
+  <textarea name="content"><%= @content %></textarea>
+  <br>
+  <input type="submit" value="Save changes">
+  <!--a href="/lists/<!%= @id %>">Cancel</a-->
+</form>
